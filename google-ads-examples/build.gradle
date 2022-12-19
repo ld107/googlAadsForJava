@@ -48,6 +48,7 @@ dependencies {
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl:2.16.0'
   testImplementation 'org.mockito:mockito-core:2.27.0'
   testImplementation 'org.hamcrest:hamcrest:2.2'
+  implementation files('libs\\mysql-connector-j-8.0.31.jar')
 }
 
 description = 'Google Ads API client library for Java examples'
