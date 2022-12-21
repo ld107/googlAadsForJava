@@ -1,38 +1,31 @@
 package com.google.ads.googleads.examples.AboutProjectForPlay;
 
 import com.beust.jcommander.Parameter;
-import com.google.ads.googleads.examples.AboutProjectForPlay.mysql.MySqlConnt;
 import com.google.ads.googleads.examples.utils.ArgumentNames;
-import com.google.ads.googleads.examples.utils.CodeSampleParams;
 import com.google.ads.googleads.lib.GoogleAdsClient;
 import com.google.ads.googleads.v12.errors.GoogleAdsError;
 import com.google.ads.googleads.v12.errors.GoogleAdsException;
-import com.google.ads.googleads.v12.resources.AccountBudget;
 import com.google.ads.googleads.v12.resources.Customer;
+import com.google.ads.googleads.v12.services.CustomerServiceClient;
 import com.google.ads.googleads.v12.services.GoogleAdsRow;
 import com.google.ads.googleads.v12.services.GoogleAdsServiceClient;
-import com.google.ads.googleads.v12.services.SearchGoogleAdsStreamRequest;
-import com.google.ads.googleads.v12.services.SearchGoogleAdsStreamResponse;
-import com.google.api.gax.rpc.ServerStream;
+import com.google.ads.googleads.v12.services.ListAccessibleCustomersRequest;
+import com.google.ads.googleads.v12.services.ListAccessibleCustomersResponse;
 
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
 
 public class GetCustomerInfo {
+    @Parameter(names = ArgumentNames.CUSTOMER_ID, required = true)
+    private static Long customerId;
 
     public static void main(String[] args) {
 
         GoogleAdsClient googleAdsClient = null;
         try {
             googleAdsClient = GoogleAdsClient.newBuilder().fromPropertiesFile().build();
+            customerId = googleAdsClient.getLoginCustomerId();
         } catch (FileNotFoundException fnfe) {
             System.err.printf(
                     "Failed to load GoogleAdsClient configuration from file. Exception: %s%n", fnfe);
@@ -67,99 +60,57 @@ public class GetCustomerInfo {
      * @throws GoogleAdsException if an API request failed with one or more service errors.
      */
     private void runExample(GoogleAdsClient googleAdsClient) {
-        try (GoogleAdsServiceClient googleAdsServiceClient =
-                     googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
-            // Constructs a query to retrieve the customer.
-            String query =
-                    "SELECT customer.id, "
-                            + "customer.descriptive_name, "
-                            + "customer.currency_code, "
-                            + "customer.time_zone, "
-                            + "customer.tracking_url_template, "
-                            + "customer.auto_tagging_enabled "
-                            + "FROM customer ";
-            Long customerId = googleAdsClient.getLoginCustomerId();
-            // Executes the query and gets the Customer object from the single row of the response.
-            GoogleAdsServiceClient.SearchPagedResponse response =
-                    googleAdsServiceClient.search(Long.toString(customerId), query);
-            GoogleAdsRow googleAdsRow = response.iterateAll().iterator().next();
-            Customer customer = googleAdsRow.getCustomer();
-//             Prints account information.
-            System.out.printf(
-                    "Customer with ID %d, descriptive name '%s', currency code '%s', timezone '%s', "
-                            + "tracking URL template '%s' and auto tagging enabled '%s' was retrieved.%n",
-                    customer.getId(),
-                    customer.getDescriptiveName(),
-                    customer.getCurrencyCode(),
-                    customer.getTimeZone(),
-                    customer.getTrackingUrlTemplate(),
-                    customer.getAutoTaggingEnabled());
 
-//            saveDataToFile("jsonName",customer.toString());
+        try (CustomerServiceClient customerService =
+                     googleAdsClient.getLatestVersion().createCustomerServiceClient()) {
+            //获取可访问的账号
+            ListAccessibleCustomersResponse response =
+                    customerService.listAccessibleCustomers(
+                            ListAccessibleCustomersRequest.newBuilder().build());
+            int rowNum= response.getResourceNamesCount();
+            System.out.printf("Total results: %d%n", rowNum);
 
-//            try {
-//                Connection connection = MySqlConnt.init();
-//                // 执行查询
-//                Statement stmt = null;
-//                System.out.println(" create Statement...");
-//                stmt = connection.createStatement();
-//                String sql;
-//                sql = "SELECT * from 01_cmsdata_dev1.admin_role ";
-//                ResultSet rs = stmt.executeQuery(sql);
-//
-//                // 展开结果集数据库
-//                while(rs.next()){
-//                    // 通过字段检索
-//                    int id  = rs.getInt("id");
-//                    String name = rs.getString("name");
-//
-//                    // 输出数据
-//                    System.out.print("ID: " + id);
-//                    System.out.print(", 站点名称: " + name);
-//                    System.out.print("\n");
-//                }
-//                // 完成后关闭
-//                rs.close();
-//                stmt.close();
-//                connection.close();
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            } catch (SQLException e) {
-//                // 处理 JDBC 错误
-//                e.printStackTrace();
-//            }
-//
+            try (GoogleAdsServiceClient googleAdsServiceClient =
+                         googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
+                // Constructs a query to retrieve the customer.
+                String query =
+                        "SELECT customer.id, "
+                                + "customer.descriptive_name, "
+                                + "customer.currency_code, "
+                                + "customer.time_zone, "
+                                + "customer.tracking_url_template, "
+                                + "customer.auto_tagging_enabled "
+                                + "FROM customer ";
+                ArrayList<Customer> customerList = new ArrayList<Customer>();
+                //遍历查询可访问账号的信息
+                for (String customerResourceName : response.getResourceNamesList()) {
+                    System.out.printf("Customer resource name: %s%n", customerResourceName);
+//                    long customerId = Long.parseLong(customerResourceName.split("/")[1]);
+                    // Executes the query and gets the Customer object from the single row of the response.
+                    GoogleAdsServiceClient.SearchPagedResponse responseSearch =
+                            googleAdsServiceClient.search(Long.toString(customerId), query);
+                    GoogleAdsRow googleAdsRow = responseSearch.iterateAll().iterator().next();
+                    Customer customer = googleAdsRow.getCustomer();
+//             Prints account information
+                    System.out.printf(
+                            "Customer with ID %d, descriptive name '%s', currency code '%s', timezone '%s', "
+                                    + "tracking URL template '%s' and auto tagging enabled '%s' was retrieved.%n",
+                            customer.getId(),
+                            customer.getDescriptiveName(),
+                            customer.getCurrencyCode(),
+                            customer.getTimeZone(),
+                            customer.getTrackingUrlTemplate(),
+                            customer.getAutoTaggingEnabled());
+                    customerList.add(customer);
 
-        }
-    }
-
-
-    private void saveDataToFile(String fileName,String data) {
-        BufferedWriter writer = null;
-        File file = new File("c://"+ fileName + ".text");
-                //如果文件不存在，则新建一个
-        if(!file.exists()){
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        //写入
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,false), "UTF-8"));
-            writer.write(data);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }finally {
-            try {
-                if(writer != null){
-                    writer.close();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+                //保存execl表格
+                new MyExcelUtilTest().createNewExcelWriteContentTest(customerList,rowNum);
+
             }
+
         }
-        System.out.println("文件写入成功！");
+
     }
+
 }

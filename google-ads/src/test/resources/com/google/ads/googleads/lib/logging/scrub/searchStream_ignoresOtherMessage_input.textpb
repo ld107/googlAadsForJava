@@ -1,8 +1,0 @@
-results {
-  asset {
-    resource_name: "foo"
-  }
-}
-field_mask {
-  paths: "asset.name"
-}
