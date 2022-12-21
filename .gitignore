@@ -50,3 +50,4 @@ google-ads/*/buildNumber.properties
 buildSrc/.gradle/
 */build/
 
+/local.properties
