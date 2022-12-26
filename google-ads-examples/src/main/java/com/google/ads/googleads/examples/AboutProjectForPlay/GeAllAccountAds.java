@@ -334,56 +334,15 @@ public class GeAllAccountAds {
                 customerClient.getDescriptiveName(),
                 customerClient.getCurrencyCode(),
                 customerClient.getTimeZone());
-//        // 创建对象用来执行sql插入语句
-//        PreparedStatement psql =
-//                connection.prepareStatement(
-//                        "insert into google_ads_data.customer " +
-//                                "values("+customerId+",'"+customerClient.getDescriptiveName()+"','"+
-//                                customerClient.getCurrencyCode()+"','"+customerClient.getTimeZone()+"');");    // sql插入语句
-//        psql.executeUpdate();
-//        // 插入结束
+        // 创建对象用来执行sql插入语句
+        PreparedStatement psql =
+                connection.prepareStatement(
+                        "insert into google_ads_data.customer " +
+                                "values("+customerId+",'"+customerClient.getDescriptiveName()+"','"+
+                                customerClient.getCurrencyCode()+"','"+customerClient.getTimeZone()+"',"+customerClient.getLevel()+");");    // sql插入语句
+        psql.executeUpdate();
+        // 插入结束
 
-        String qurey =
-                "SELECT customer.id, " +
-                        "customer.status, " +
-                        "customer.descriptive_name, " +
-                        "customer.time_zone, " +
-                        "metrics.all_conversions, " +
-                        "metrics.all_conversions_by_conversion_date, " +
-                        "metrics.all_conversions_value, " +
-                        "metrics.all_conversions_from_interactions_rate, " +
-                        "metrics.all_conversions_value_by_conversion_date, " +
-                        "metrics.conversions_by_conversion_date," +
-                        " metrics.conversions_value_by_conversion_date" +
-                        " FROM customer";
-//        if(String.valueOf(customerId).equals("3679389997")||String.valueOf(customerId).equals("5877229176")){
-//            return;
-//        }
-//        try (GoogleAdsServiceClient googleAdsServiceClient =
-//                     googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
-//            String query = "SELECT campaign.id, campaign.name FROM campaign ORDER BY campaign.id";
-//            // Constructs the SearchGoogleAdsStreamRequest.
-//            SearchGoogleAdsStreamRequest request =
-//                    SearchGoogleAdsStreamRequest.newBuilder()
-//                            .setCustomerId(Long.toString(customerId))
-//                            .setQuery(query)
-//                            .build();
-//
-//            // Creates and issues a search Google Ads stream request that will retrieve all campaigns.
-//            ServerStream<SearchGoogleAdsStreamResponse> stream =
-//                    googleAdsServiceClient.searchStreamCallable().call(request);
-//
-//            // Iterates through and prints all of the results in the stream response.
-//            for (SearchGoogleAdsStreamResponse response : stream) {
-//                for (GoogleAdsRow googleAdsRow : response.getResultsList()) {
-////                    hashMap.put(customerClient,googleAdsRow.getCampaign());
-//                    System.out.printf(
-//                            "Campaign with ID %d and name '%s' was found.%n",
-//                            googleAdsRow.getCampaign().getId(), googleAdsRow.getCampaign().getName());
-//                }
-//            }
-//
-//        }
 
 
         // Recursively calls this function for all child accounts of customerClient if the current
