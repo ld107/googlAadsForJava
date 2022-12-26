@@ -1,4 +1,4 @@
-package com.google.ads.googleads.examples.AboutProjectForPlay;
+package com.google.ads.googleads.examples.AboutProjectForPlay.excel;
 
 import com.google.ads.googleads.examples.AboutProjectForPlay.excel.domain.*;
 import com.google.ads.googleads.examples.AboutProjectForPlay.excel.util.MyExcelUtil;

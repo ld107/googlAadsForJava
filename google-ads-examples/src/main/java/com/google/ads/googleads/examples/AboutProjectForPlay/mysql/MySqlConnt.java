@@ -10,11 +10,13 @@ import java.sql.Statement;
 public class MySqlConnt {
     // MySQL 8.0 以上版本 - JDBC 驱动名及数据库 URL
     static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
-    static final String DB_URL = "jdbc:mysql://db-01-cmsdata-dev1.czw7olp7vldl.ap-southeast-1.rds.amazonaws.com:3306?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-
+//    static final String DB_URL = "jdbc:mysql://db-01-cmsdata-dev1.czw7olp7vldl.ap-southeast-1.rds.amazonaws.com:3306?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+    static final String DB_URL="jdbc:mysql://localhost:3306?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     // 数据库的用户名与密码
-    static final String USER = "read";
-    static final String PASS = "ed384f58875d01e242293142eed75a7a";
+//    static final String USER = "read";
+//    static final String PASS = "ed384f58875d01e242293142eed75a7a";
+    static final String USER = "root";
+    static final String PASS = "root";
     static Connection conn = null;
     public static  Connection init() throws ClassNotFoundException, SQLException {
             // 注册 JDBC 驱动

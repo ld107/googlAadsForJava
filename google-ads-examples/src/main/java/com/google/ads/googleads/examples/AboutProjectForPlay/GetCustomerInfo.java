@@ -1,6 +1,7 @@
 package com.google.ads.googleads.examples.AboutProjectForPlay;
 
 import com.beust.jcommander.Parameter;
+import com.google.ads.googleads.examples.AboutProjectForPlay.excel.MyExcelUtilTest;
 import com.google.ads.googleads.examples.utils.ArgumentNames;
 import com.google.ads.googleads.lib.GoogleAdsClient;
 import com.google.ads.googleads.v12.errors.GoogleAdsError;
@@ -59,7 +60,7 @@ public class GetCustomerInfo {
      * @param googleAdsClient the Google Ads API client.
      * @throws GoogleAdsException if an API request failed with one or more service errors.
      */
-    private void runExample(GoogleAdsClient googleAdsClient) {
+    void runExample(GoogleAdsClient googleAdsClient) {
 
         try (CustomerServiceClient customerService =
                      googleAdsClient.getLatestVersion().createCustomerServiceClient()) {
@@ -85,7 +86,7 @@ public class GetCustomerInfo {
                 //遍历查询可访问账号的信息
                 for (String customerResourceName : response.getResourceNamesList()) {
                     System.out.printf("Customer resource name: %s%n", customerResourceName);
-//                    long customerId = Long.parseLong(customerResourceName.split("/")[1]);
+                    long customerId = Long.parseLong(customerResourceName.split("/")[1]);
                     // Executes the query and gets the Customer object from the single row of the response.
                     GoogleAdsServiceClient.SearchPagedResponse responseSearch =
                             googleAdsServiceClient.search(Long.toString(customerId), query);
