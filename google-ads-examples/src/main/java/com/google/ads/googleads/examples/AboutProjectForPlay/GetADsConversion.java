@@ -38,7 +38,7 @@ public class GetADsConversion {
             connection = MySqlConnt.init();
             // 创建对象用来执行sql查询语句
             Statement statement = connection.createStatement();
-            String sql = "select * from google_ads_data.customer where google_ads_data.customer.level>=1";      // sql 语句
+            String sql = "select * from google_ads_data.customer where google_ads_data.customer.manager=0";      // sql 语句
             ResultSet rs = statement.executeQuery(sql);   // 执行 sql
             while(rs.next()) {
                 String customerId = String.valueOf(rs.getBigDecimal("id"));
@@ -51,7 +51,7 @@ public class GetADsConversion {
                             " metrics.all_conversions, " +
                             "customer.id, customer.manager, " +
                             "customer.descriptive_name " +
-                            "FROM campaign WHERE segments.date = '2022-12-22'";
+                            "FROM campaign WHERE segments.date = '2022-12-25'";
 
                     try (GoogleAdsServiceClient googleAdsServiceClient =
                                  googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
@@ -79,12 +79,11 @@ public class GetADsConversion {
                                 // 创建对象用来执行sql插入语句
                                 PreparedStatement psql =
                                         connection.prepareStatement(
-                                                "insert into google_ads_data.campain_conversion " +
+                                                "insert into google_ads_data.campaign_conversion " +
                                                         "values("+0+","+customerId+",'"+customer.getDescriptiveName()+"',"+campaign.getId()
-                                                        +",'"+campaign.getName()+"','"+campaign.getCampaignBudget()+"','"
-                                                        +campaign.getCampaignGroup()+"','"+campaign.getStatus()+"','"+campaign.getStartDate()
-                                                        +"',"+metrics.getAbsoluteTopImpressionPercentage()+","+ metrics.getAllConversions()
-                                                        +");");    // sql插入语句
+                                                        +",'"+campaign.getName()+"','"+campaign.getCampaignGroup()+"',"+metrics.getAllConversions()
+                                                        +","+metrics.getAbsoluteTopImpressionPercentage()+",'"
+                                                        +campaign.getStartDate()+"','"+campaign.getCampaignBudget()+"','"+campaign.getStatus() +"');");    // sql插入语句
                                 psql.executeUpdate();
                                 // 插入结束
                             }

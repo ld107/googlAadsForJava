@@ -335,15 +335,22 @@ public class GeAllAccountAds {
                 customerClient.getCurrencyCode(),
                 customerClient.getTimeZone());
         // 创建对象用来执行sql插入语句
+        String insertStr = "";
+        if(customerClient.getManager()){
+            insertStr = "insert into google_ads_data.customer " +
+                    "values("+customerId+",'"+customerClient.getDescriptiveName()+"','"+
+                    customerClient.getCurrencyCode()+"','"+customerClient.getTimeZone()+
+                    "',"+customerClient.getLevel()+",1);";
+        }else{
+            insertStr = "insert into google_ads_data.customer " +
+                    "values("+customerId+",'"+customerClient.getDescriptiveName()+"','"+
+                    customerClient.getCurrencyCode()+"','"+customerClient.getTimeZone()+
+                    "',"+customerClient.getLevel()+",0);";
+        }
         PreparedStatement psql =
-                connection.prepareStatement(
-                        "insert into google_ads_data.customer " +
-                                "values("+customerId+",'"+customerClient.getDescriptiveName()+"','"+
-                                customerClient.getCurrencyCode()+"','"+customerClient.getTimeZone()+"',"+customerClient.getLevel()+");");    // sql插入语句
+                connection.prepareStatement(insertStr);    // sql插入语句
         psql.executeUpdate();
         // 插入结束
-
-
 
         // Recursively calls this function for all child accounts of customerClient if the current
         // customer is a manager account.
