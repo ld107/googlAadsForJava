@@ -13,6 +13,7 @@ import com.google.api.gax.rpc.ServerStream;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,6 +41,11 @@ public class GetADsConversion {
             Statement statement = connection.createStatement();
             String sql = "select * from google_ads_data.customer where google_ads_data.customer.manager=0";      // sql 语句
             ResultSet rs = statement.executeQuery(sql);   // 执行 sql
+            String insertStr= "insert into google_ads_data.campaign_conversion " +
+                    "values(?,?,?,?,?,?,?,?,?,?,?);";;
+            // 创建对象用来执行sql插入语句
+            PreparedStatement psql =
+                    connection.prepareStatement(insertStr);    // sql插入语句
             while(rs.next()) {
                 String customerId = String.valueOf(rs.getBigDecimal("id"));
                 System.out.printf("customerId ==== %s .%n",customerId);
@@ -75,26 +81,31 @@ public class GetADsConversion {
                                 System.out.printf(
                                         "Campaign with ID %d and name '%s' was found.%n",
                                         campaign.getId(), campaign.getName());
-
-                                // 创建对象用来执行sql插入语句
-                                PreparedStatement psql =
-                                        connection.prepareStatement(
-                                                "insert into google_ads_data.campaign_conversion " +
-                                                        "values("+0+","+customerId+",'"+customer.getDescriptiveName()+"',"+campaign.getId()
-                                                        +",'"+campaign.getName()+"','"+campaign.getCampaignGroup()+"',"+metrics.getAllConversions()
-                                                        +","+metrics.getAbsoluteTopImpressionPercentage()+",'"
-                                                        +campaign.getStartDate()+"','"+campaign.getCampaignBudget()+"','"+campaign.getStatus() +"');");    // sql插入语句
+//                                 insertStr= "insert into google_ads_data.campaign_conversion " +
+//                                        "values("+0+","+customerId+",'"+customer.getDescriptiveName()+"',"+campaign.getId()
+//                                        +",'"+campaign.getName()+"','"+campaign.getCampaignGroup()+"',"+metrics.getAllConversions()
+//                                        +","+metrics.getAbsoluteTopImpressionPercentage()+",'"
+//                                        +campaign.getStartDate()+"','"+campaign.getCampaignBudget()+"','"+campaign.getStatus() +"');";
+                                psql.setInt(1,0);
+                                psql.setString(2, customerId);
+                                psql.setString(3, customer.getDescriptiveName());
+                                psql.setString(4, String.valueOf(campaign.getId()));
+                                psql.setString(5,campaign.getName());
+                                psql.setString(6,campaign.getCampaignGroup());
+                                psql.setDouble(7,metrics.getAllConversions());
+                                psql.setDouble(8,metrics.getAbsoluteTopImpressionPercentage());
+                                psql.setString(9,campaign.getStartDate());
+                                psql.setString(10,campaign.getCampaignBudget());
+                                psql.setString(11, String.valueOf(campaign.getStatus()));
                                 psql.executeUpdate();
                                 // 插入结束
                             }
                         }
-
                     }
-
                 }
-
-
             }
+            psql.close();
+            connection.close();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (SQLException e) {
