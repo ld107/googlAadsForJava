@@ -106,11 +106,9 @@ public class GetADsConversion {
             }
             psql.close();
             connection.close();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (SQLException e) {
+        } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
 
-        }
+    }
 }
