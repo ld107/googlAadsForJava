@@ -156,10 +156,11 @@ public class GeAllAccountAds {
         int depth = 0;
         // Prints the hierarchy information for all accounts for which there is hierarchy information
         // available.
-
+        Statement statement = connection.createStatement();
         for (CustomerClient rootCustomerClient : allHierarchies.keySet()) {
+//            statement.executeQuery("TRUNCATE table google_ads_data.customer");//清空表
             System.out.printf("Hierarchy of customer ID %d:%n", rootCustomerClient.getId());
-            printAccountHierarchy(rootCustomerClient, allHierarchies.get(rootCustomerClient), depth,googleAdsClient);
+            printAccountHierarchy(rootCustomerClient, allHierarchies.get(rootCustomerClient), depth);
             System.out.println();
         }
         connection.close();
@@ -311,8 +312,7 @@ public class GeAllAccountAds {
     private void printAccountHierarchy(
             CustomerClient customerClient,
             Multimap<Long, CustomerClient> customerIdsToChildAccounts,
-            int depth,
-            GoogleAdsClient googleAdsClient) throws SQLException {
+            int depth) throws SQLException {
         String leadingSpace = " ";
         if (depth == 0) {
             System.out.println("Customer ID (Descriptive Name, Currency Code, Time Zone");
@@ -322,12 +322,6 @@ public class GeAllAccountAds {
         }
         System.out.print(Strings.repeat("-", depth * 2));
         long customerId = customerClient.getId();
-        System.out.printf(
-                leadingSpace + "%d ('%s', '%s', '%s')%n",
-                customerId,
-                customerClient.getDescriptiveName(),
-                customerClient.getCurrencyCode(),
-                customerClient.getTimeZone());
         System.out.printf(
                 leadingSpace + "%d ('%s', '%s', '%s')%n",
                 customerId,
@@ -355,7 +349,7 @@ public class GeAllAccountAds {
         // Recursively calls this function for all child accounts of customerClient if the current
         // customer is a manager account.
         for (CustomerClient childCustomer : customerIdsToChildAccounts.get(customerId)) {
-            printAccountHierarchy(childCustomer, customerIdsToChildAccounts, depth + 1,googleAdsClient);
+            printAccountHierarchy(childCustomer, customerIdsToChildAccounts, depth + 1);
         }
     }
 }
