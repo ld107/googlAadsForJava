@@ -1,0 +1,90 @@
+[
+  {
+    "region": "越南",
+    "time_difference": 8
+  },
+  {
+    "region": "马来西亚",
+    "time_difference": 8
+  },
+  {
+    "region": "马来英语",
+    "time_difference": 8
+  },
+  {
+    "region": "伊朗",
+    "time_difference": 4
+  },
+  {
+    "region": "印度",
+    "time_difference": 5
+  },
+  {
+    "region": "印尼",
+    "time_difference": 7
+  },
+  {
+  "region": "泰国",
+  "time_difference": 7
+},
+  {
+    "region": "孟加拉",
+    "time_difference": 6
+  },
+  {
+    "region": "加纳",
+    "time_difference": 0
+  },
+  {
+    "region": "哈萨克斯坦",
+    "time_difference": 6
+  },
+  {
+    "region": "巴西",
+    "time_difference": -4
+  },
+  {
+    "region": "尼日利亚",
+    "time_difference": 1
+  },
+  {
+    "region": "秘鲁",
+    "time_difference": -5
+  },
+  {
+    "region": "厄瓜多尔",
+    "time_difference": -5
+  },
+  {
+    "region": "哥伦比亚",
+    "time_difference": -5
+  },
+  {
+    "region": "墨西哥",
+    "time_difference": -6
+  },
+  {
+    "region": "菲律宾",
+    "time_difference": 8
+  },
+  {
+    "region": "南非",
+    "time_difference": 2
+  },
+  {
+    "region": "肯尼亚",
+    "time_difference": 3
+  },
+  {
+    "region": "土耳其",
+    "time_difference": 3
+  },
+  {
+    "region": "埃及",
+    "time_difference": 2
+  },
+  {
+    "region": "摩洛哥",
+    "time_difference": 1
+  }
+]

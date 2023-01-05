@@ -1,22 +1,10 @@
 package com.google.ads.googleads.examples.AboutProjectForPlay;
 
-// Copyright 2018 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
-// [START sheets_quickstart]
 
-import com.google.ads.googleads.examples.AboutProjectForPlay.data.ClickObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.google.ads.googleads.examples.utils.LocalJSONFileUtil;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
@@ -25,7 +13,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -34,25 +21,25 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Serializable;
-import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 public class SheetsQuickstart {
     private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
@@ -112,14 +99,19 @@ public class SheetsQuickstart {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
+
     /**
      * Prints the names and majors of students in a sample spreadsheet:
      * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
      */
-    public static void main(String... args) throws IOException, GeneralSecurityException, SQLException, ClassNotFoundException {
+    public static void main(String... args) throws IOException, GeneralSecurityException, SQLException, ClassNotFoundException, ParseException {
         Connection conn = init();
         Statement stmt = conn.createStatement(); //创建Statement对象
         System.out.println("成功连接到数据库！");
+
+        String textJOSN = LocalJSONFileUtil.getFileText("/date.json");
+        JSONArray jsonArray = LocalJSONFileUtil.parseArray(textJOSN);
+        System.out.println(textJOSN);
 
         String sql="SELECT " +
                 "01_cmsdata_dev1.click.id," +
@@ -140,43 +132,59 @@ public class SheetsQuickstart {
                 "GROUP BY 01_cmsdata_dev1.click.app_id,01_cmsdata_dev1.click.datetime,01_cmsdata_dev1.click.btime  " +
                 "ORDER BY btime desc";
         ResultSet rs = stmt.executeQuery(sql);//创建数据对象
-//
-        System.out.println("id"+"\t"+"包版本"+"\t"+"datetime"+"\t"+"uuid"+"\t"+"count_uuid"+"\t"+"click_num"+"\t"+"btime"+"\t"+"包名称"+"\t"+"region"+"\t"+"region_id"+"\t"+"tag_name");
-        List<ClickObject> clickList = new ArrayList<>();
+        /*暂存数据表*/
+        List<List<Object>> cacheValues = new ArrayList<>();
+        cacheValues.add(Arrays.asList("事件id","地区","日期","事件uuid","事件出现次数","点击次数","btime","小时","分钟","包版本","包名称","转化日期"));
+        //仪表盘1
         List<List<Object>> values = new ArrayList<>();
-        values.add(Arrays.asList("事件id","地区","日期","事件uuid","事件出现次数","点击次数","btime","包版本","包名称"));
+        values.add(Arrays.asList("日期","地区","点击次数","消耗","安装次数","安装成本","打开次数","打开成本"));
         while (rs.next()){
-            System.out.print(rs.getString(1) + "\t");
-            System.out.print(rs.getString(2) + "\t");
-            System.out.print(rs.getInt(3) + "\t");
-            System.out.print(rs.getString(4) + "\t");
-            System.out.print(rs.getString(5) + "\t");
-            System.out.print(rs.getInt(6) + "\t");
-            System.out.print(rs.getInt(7) + "\t");
-            System.out.print(rs.getString(8) + "\t");
-            System.out.print(rs.getString(9) + "\t");
-            System.out.print(rs.getString(10) + "\t");
-            System.out.print(rs.getString(11) + "\t");
             System.out.println();
-            clickList.add(new ClickObject(rs.getString(1),rs.getString(2),rs.getInt(3),rs.getString(4),rs.getString(5),
-                    rs.getInt(6) ,rs.getInt(7),rs.getString(8),rs.getString(9),rs.getString(10),rs.getString(11) ));
-            List<Object> serializables = Arrays.asList(rs.getString(1),rs.getString(11),rs.getInt(3), rs.getString(4), rs.getString(5), rs.getInt(6),
-                    rs.getInt(7),rs.getString(2), rs.getString(8));
-            values.add(serializables);
+            int anInt = rs.getInt(7);
+            String stInt = String.valueOf(anInt);
+            String houBJ;
+            String minuteBJ;
+            if(anInt<100){
+                houBJ="00";
+                minuteBJ=String.valueOf(anInt);
+            }else if(anInt<1000){
+             houBJ = "0"+stInt.charAt(0);
+             minuteBJ = stInt.substring(1);
+
+            }else{
+                houBJ =stInt.substring(0,2);
+                minuteBJ = stInt.substring(2);
+            }
+            String region = rs.getString(11);
+            String dateStr = rs.getInt(3)+" "+houBJ+":"+minuteBJ+":00";
+            String converDateGMT = dateStr;
+            for(int i=0;i<jsonArray.size();i++) {
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                String name = jsonObject.getString("region");
+                int time_difference = jsonObject.getIntValue("time_difference");
+                if(region.equals(name)){
+                    if(time_difference>=0){
+                        converDateGMT = converDateGMT(dateStr, "GMT+8", "GMT+"+time_difference);
+                    }else{
+                        converDateGMT = converDateGMT(dateStr, "GMT+8", "GMT"+time_difference);
+                    }
+                     break;
+                }
+            }
+            List<Object> objList = Arrays.asList(rs.getString(1),rs.getString(11),rs.getInt(3), rs.getString(4), rs.getString(5), rs.getInt(6),
+                    rs.getInt(7),houBJ,minuteBJ,rs.getString(2), rs.getString(8),converDateGMT);
+            cacheValues.add(objList);
         }
-
-
-        sql = "SELECT * from 01_cmsdata_dev1.tag ";
 
         rs.close();
         stmt.close();
         conn.close();
-//        SELECT id,app_id,datetime,count(DISTINCT(uuid))as count_uuid,btime from click WHERE `datetime` >= date_sub(curdate(), interval 7 day)  GROUP BY app_id,datetime,btime ORDER BY btime desc
 
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
         final String spreadsheetId = "1bZDCy8Es-C1PutahR3GoKH3AaJcLYg-Weu0q7f2fw5Q";
-        final String range = "数据暂存";
+        final String rangeCache = "数据暂存";
+        final String range = "仪表盘1";
 
         Sheets service =
                 new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
@@ -185,13 +193,14 @@ public class SheetsQuickstart {
 
         UpdateValuesResponse result = null;
         try {
-            // Updates the values in the specified range.
-            ValueRange body = new ValueRange()
-                    .setValues(values);
-            result = service.spreadsheets().values().update(spreadsheetId, range, body)
+            // Updates the cacheValues in the specified range.
+            ValueRange body = new ValueRange().setValues(cacheValues);
+            result = service.spreadsheets().values().update(spreadsheetId, rangeCache, body)
                     .setValueInputOption("USER_ENTERED")
                     .execute();
             System.out.printf("%d cells updated.", result.getUpdatedCells());
+
+
         } catch (GoogleJsonResponseException e) {
             // TODO(developer) - handle error appropriately
             GoogleJsonError error = e.getDetails();
@@ -202,25 +211,32 @@ public class SheetsQuickstart {
             }
         }
 
-//        ValueRange response = service.spreadsheets().values()
-//                .get(spreadsheetId, range)
-//                .execute();
-//        List<List<Object>> values = response.getValues();
-//
-//
-//        if (values == null || values.isEmpty()) {
-//            System.out.println("No data found.");
-//        } else {
-//            System.out.println("Name, Major");
-//
-//            for (List row : values) {
-//                // Print columns A and E, which correspond to indices 0 and 4.
-//                System.out.printf("%s, %s\n", row.get(0), row.get(1));
-//            }
-//        }
 
 
     }
+
+    /**
+     * 转换时间时区
+     *
+     * @param dateStr        需要转的时间字符串
+     * @param sourceTimeZone 源时间时区 GMT+8
+     * @param targetTimeZone 目标时间时区 GMT+6
+     * @return
+     * @throws ParseException
+     */
+    public static String converDateGMT(String dateStr, String sourceTimeZone, String targetTimeZone) throws ParseException {
+        System.out.println("targetTimeZone"+targetTimeZone);
+        SimpleDateFormat bjSdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+        bjSdf.setTimeZone(TimeZone.getTimeZone(sourceTimeZone));
+        Date date = bjSdf.parse(dateStr);  // 将字符串时间按北京时间解析成Date对象
+
+        SimpleDateFormat tokyoSdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+        tokyoSdf.setTimeZone(TimeZone.getTimeZone(targetTimeZone));  // 设置时区
+        System.out.println("北京时间: " + dateStr +"对应的时间为:"  + tokyoSdf.format(date));
+        return tokyoSdf.format(date);
+    }
+
+
 }
 // [END sheets_quickstart]
 
