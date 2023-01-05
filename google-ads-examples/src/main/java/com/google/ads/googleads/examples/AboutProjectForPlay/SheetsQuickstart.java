@@ -4,6 +4,7 @@ package com.google.ads.googleads.examples.AboutProjectForPlay;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.ads.googleads.examples.AboutProjectForPlay.data.ConversionData;
 import com.google.ads.googleads.examples.utils.LocalJSONFileUtil;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -38,8 +39,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 public class SheetsQuickstart {
     private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
@@ -134,12 +140,11 @@ public class SheetsQuickstart {
         ResultSet rs = stmt.executeQuery(sql);//创建数据对象
         /*暂存数据表*/
         List<List<Object>> cacheValues = new ArrayList<>();
-        cacheValues.add(Arrays.asList("事件id","地区","日期","事件uuid","事件出现次数","点击次数","btime","小时","分钟","包版本","包名称","转化日期"));
-        //仪表盘1
-        List<List<Object>> values = new ArrayList<>();
-        values.add(Arrays.asList("日期","地区","点击次数","消耗","安装次数","安装成本","打开次数","打开成本"));
+        cacheValues.add(Arrays.asList("事件id","地区","日期","事件uuid","事件出现次数","点击次数","btime",
+                "小时","分钟","包版本","包名称","转化后日期","天","转化小时","转化分钟"));
+
+        List<ConversionData> conversionDataList = new ArrayList<>();
         while (rs.next()){
-            System.out.println();
             int anInt = rs.getInt(7);
             String stInt = String.valueOf(anInt);
             String houBJ;
@@ -171,36 +176,77 @@ public class SheetsQuickstart {
                      break;
                 }
             }
+            String day = getDay(converDateGMT);
+            String hour = getHour(converDateGMT);
+            String minute = getMinute(converDateGMT);
             List<Object> objList = Arrays.asList(rs.getString(1),rs.getString(11),rs.getInt(3), rs.getString(4), rs.getString(5), rs.getInt(6),
-                    rs.getInt(7),houBJ,minuteBJ,rs.getString(2), rs.getString(8),converDateGMT);
+                    rs.getInt(7),houBJ,minuteBJ,rs.getString(2), rs.getString(8),converDateGMT,day,hour,minute);
             cacheValues.add(objList);
+            conversionDataList.add(new ConversionData(rs.getString(11),day,rs.getString(5)));
         }
 
         rs.close();
         stmt.close();
         conn.close();
+        //仪表盘1
+        List<List<Object>> values = new ArrayList<>();
+        values.add(Arrays.asList("日期","地区","点击次数","消耗","安装次数","安装成本","打开次数","打开成本"));
 
+        Set<String> sex = new HashSet<>(conversionDataList.stream().map(ConversionData::getDate).collect(Collectors.toList()));
+        Set<String> grade = new HashSet<>(conversionDataList.stream().map(ConversionData::getRegion).collect(Collectors.toList()));
+        //循环分组
+        Map<String, List<ConversionData>> map = new HashMap<>();
+        for (String string : sex) {
+            for (String str : grade) {
+                if (string == null || str == null) {
+                    continue;
+                }
+                List<ConversionData> sl = new ArrayList<>();
+                for (ConversionData data : conversionDataList) {
+                    if (string.equals(data.getDate()) && str.equals(data.getRegion())) {
+                        sl.add(data);
+                    }
+                }
+                map.put(string+"/"+ str, sl);
+            }
+        }
+        //查看测试结果
+        for (Map.Entry<String, List<ConversionData>> listsList1 : map.entrySet()) {
+            System.out.println("key:"+listsList1.getKey());
+            int totalnum = 0;
+            for (ConversionData st : listsList1.getValue()) {
+//                System.out.println(st.getDate() + " name:" + st.getRegion() + "  " + st.getNum());
+                totalnum += Integer.parseInt(st.getNum());
+            }
+            System.out.println("totalnum:"+totalnum);
+            System.out.println("--------------------------");
+            String[] split = listsList1.getKey().split("/");
+            values.add(Arrays.asList(split[0],split[1],String.valueOf(totalnum),"","","","",""));
+        }
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
         final String spreadsheetId = "1bZDCy8Es-C1PutahR3GoKH3AaJcLYg-Weu0q7f2fw5Q";
         final String rangeCache = "数据暂存";
-        final String range = "仪表盘1";
+        final String range = "仪表盘-1";
 
         Sheets service =
                 new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                         .setApplicationName(APPLICATION_NAME)
                         .build();
 
-        UpdateValuesResponse result = null;
         try {
-            // Updates the cacheValues in the specified range.
-            ValueRange body = new ValueRange().setValues(cacheValues);
-            result = service.spreadsheets().values().update(spreadsheetId, rangeCache, body)
+            // Updates the values in the specified range.
+            ValueRange bodyCache = new ValueRange().setValues(cacheValues);
+            UpdateValuesResponse resultCache = service.spreadsheets().values().update(spreadsheetId, rangeCache, bodyCache)
+                    .setValueInputOption("USER_ENTERED")
+                    .execute();
+            System.out.printf("%d cells updated.", resultCache.getUpdatedCells());
+
+            ValueRange body = new ValueRange().setValues(values);
+            UpdateValuesResponse result = service.spreadsheets().values().update(spreadsheetId, range, body)
                     .setValueInputOption("USER_ENTERED")
                     .execute();
             System.out.printf("%d cells updated.", result.getUpdatedCells());
-
-
         } catch (GoogleJsonResponseException e) {
             // TODO(developer) - handle error appropriately
             GoogleJsonError error = e.getDetails();
@@ -225,17 +271,27 @@ public class SheetsQuickstart {
      * @throws ParseException
      */
     public static String converDateGMT(String dateStr, String sourceTimeZone, String targetTimeZone) throws ParseException {
-        System.out.println("targetTimeZone"+targetTimeZone);
         SimpleDateFormat bjSdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
         bjSdf.setTimeZone(TimeZone.getTimeZone(sourceTimeZone));
         Date date = bjSdf.parse(dateStr);  // 将字符串时间按北京时间解析成Date对象
 
         SimpleDateFormat tokyoSdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
         tokyoSdf.setTimeZone(TimeZone.getTimeZone(targetTimeZone));  // 设置时区
-        System.out.println("北京时间: " + dateStr +"对应的时间为:"  + tokyoSdf.format(date));
+//        System.out.println("北京时间: " + dateStr +"对应的时间为:"  + tokyoSdf.format(date));
         return tokyoSdf.format(date);
     }
-
+    public static String getDay(String dateStr) throws ParseException {
+        Date date = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse(dateStr);
+        return new SimpleDateFormat("yyyyMMdd").format(date);
+    }
+    public static String getHour(String dateStr) throws ParseException {
+        Date date = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse(dateStr);
+        return new SimpleDateFormat("HH").format(date);
+    }
+    public static String getMinute(String dateStr) throws ParseException {
+        Date date = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse(dateStr);
+        return new SimpleDateFormat("mm").format(date);
+    }
 
 }
 // [END sheets_quickstart]
